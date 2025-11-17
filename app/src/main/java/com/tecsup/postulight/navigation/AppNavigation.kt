@@ -30,6 +30,10 @@ fun AppNavigation(ip: String) {
         composable(NavRoutes.Home.route) {
             HomeScreen(ip)
         }
+        composable(NavRoutes.Home.route) {
+            // ¡La clave! Ahora navegas al nuevo contenedor del Dashboard
+            MainScreen(ip = ip)
+        }
     }
 }
 
