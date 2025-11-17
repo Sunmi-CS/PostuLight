@@ -31,14 +31,7 @@ fun WelcomeScreen(navController: NavController) {
         Image(
             painter = painterResource(id = R.drawable.posturalogo),
             contentDescription = "Logo",
-            modifier = Modifier.size(240.dp)
-        )
-
-        Text(
-            text = "Postu\nLight",
-            fontSize = 36.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.size(350.dp)
         )
 
         Spacer(modifier = Modifier.height(40.dp))
