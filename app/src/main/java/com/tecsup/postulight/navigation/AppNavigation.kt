@@ -27,12 +27,10 @@ fun AppNavigation(ip: String) {
             RegisterScreen(navController)
         }
 
+        // ⭐ Nunca navegar directamente a HomeScreen o StatisticsScreen
+        // Siempre usar MainScreen como contenedor de BottomNav
         composable(NavRoutes.Home.route) {
-            HomeScreen(ip)
-        }
-        composable(NavRoutes.Home.route) {
-            // ¡La clave! Ahora navegas al nuevo contenedor del Dashboard
-            MainScreen(ip = ip)
+            MainScreen(ip = ip, navController = navController)
         }
     }
 }

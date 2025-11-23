@@ -10,4 +10,6 @@ sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: 
     object Home : BottomNavItem("home_tab", Icons.Default.Home, "Inicio")
     object Statistics : BottomNavItem("statistics_tab", Icons.Default.BarChart, "Estadísticas")
     object Settings : BottomNavItem("settings_tab", Icons.Default.Settings, "Ajustes")
+
+
 }

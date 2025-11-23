@@ -1,278 +1,274 @@
 package com.tecsup.postulight.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.tecsup.postulight.arduino.httpGet
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.tecsup.postulight.R
+import kotlinx.coroutines.delay
+import com.tecsup.postulight.navigation.BottomNavItem
 
-// --- Colores y Estilos Auxiliares ---
-private val CorrectColor = Color(0xFF4CAF50) // Verde
-private val IncorrectColor = Color(0xFFFF9800) // Naranja/Amarillo
-private val LightBlueBackground = Color(0xFFE9F4F6) // Fondo azul claro de las tarjetas
 
 @Composable
-fun HomeScreen(ip: String) {
+fun HomeScreen(ip: String, navController: NavController) {
 
-    // --- Lógica del Sensor (Asíncrona) ---
-    var postureState by remember { mutableStateOf("Desconectado") }
-    var timeCorrect by remember { mutableStateOf("0h 00m") }
-    var timeIncorrect by remember { mutableStateOf("0h 00m") }
-    var sensorOn by remember { mutableStateOf(false) } // Estado del interruptor (Iniciar/Detener)
-    val scope = rememberCoroutineScope()
+    var sensorActivo by remember { mutableStateOf(false) }
+    var postura by remember { mutableStateOf("BUENA") }
 
-    // 💡 Toggle para Iniciar/Detener Sensor
-    val toggleSensor: (Boolean) -> Unit = { isOn ->
-        scope.launch(Dispatchers.IO) {
-            val endpoint = if (isOn) "start" else "stop"
-            val response = httpGet("$ip/$endpoint")
-            if (!response.startsWith("ERROR")) {
-                sensorOn = isOn
-                // Opcional: mostrar un Toast de éxito o fallo
-            } else {
-                // Si falla, revertir el switch y mostrar error
-                sensorOn = !isOn
-                postureState = "Error: $response"
-            }
+    // Simulación: aquí luego llamamos al ESP8266
+    LaunchedEffect(sensorActivo) {
+        while (sensorActivo) {
+            delay(1500)
         }
     }
 
-    // 💡 Función para Obtener Datos (Refresh)
-    val refreshData: () -> Unit = {
-        scope.launch(Dispatchers.IO) {
-            val response = httpGet("$ip/data")
-
-            if (response.startsWith("ERROR")) {
-                postureState = "Error: $response"
-                timeCorrect = "0h 00m"
-                timeIncorrect = "0h 00m"
-            } else {
-                // *** IMPLEMENTACIÓN REAL: Aquí debes parsear el JSON de tu Arduino ***
-                // SIMULACIÓN DE PARSEO:
-                if (response.contains("Correcta", ignoreCase = true) || response.contains("ok", ignoreCase = true)) {
-                    postureState = "Correcta"
-                } else {
-                    postureState = "Mala"
-                }
-                timeCorrect = "3h 45m" // Valores de ejemplo para la UI
-                timeIncorrect = "1h 30m" // Valores de ejemplo para la UI
-            }
-        }
+    val imagenPostura = when (postura) {
+        "BUENA" -> R.drawable.postura_buena
+        "MALA" -> R.drawable.postura_mala
+        else -> R.drawable.postura_buena
     }
-    // --- Fin Lógica del Sensor ---
 
-    // UI Principal con scroll
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.White) // ⭐ FONDO BLANCO EN TODA LA PANTALLA
+
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.Start
+            .padding(horizontal = 16.dp)
     ) {
 
-        Text("ESTADO ACTUAL", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
 
-        // 1. Vincular Sensor y Lámpara (Switch)
+        // --------------------- ESTADO ACTUAL ---------------------
+        Text(
+            "ESTADO ACTUAL",
+            fontWeight = FontWeight.Bold,
+            color = Color(0xff13485e),
+            fontSize = 25.sp
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Vincular Sensor y Lámpara", fontWeight = FontWeight.Medium)
-            Switch(checked = sensorOn, onCheckedChange = toggleSensor)
+            Text("Sensor y Lampara")
+
+            Switch(
+                checked = sensorActivo,
+                onCheckedChange = { sensorActivo = it }
+            )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 2. Tarjeta de Estado de Postura y Tiempos
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        OutlinedButton(
+            onClick = { sensorActivo = !sensorActivo },
+            modifier = Modifier.padding(top = 4.dp)
         ) {
-            // Este es el nuevo componente de diseño que creamos
-            PostureStatusCard(
-                postureState = postureState,
-                timeCorrect = timeCorrect,
-                timeIncorrect = timeIncorrect,
-                onRefreshClick = refreshData
-            )
+            Text(if (sensorActivo) "Sensor Activado" else "Vincular Sensor y Lámpara")
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // ------------------ TARJETA DE POSTURA ------------------
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            // Tarjeta izquierda
+            Column(
+                modifier = Modifier
+                    .weight(0.55f)
+                    .background(Color(0xFFE4F2F6), RoundedCornerShape(16.dp))
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Text(
+                    "Estado actual de la Postura",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Image(
+                    painter = painterResource(id = imagenPostura),
+                    contentDescription = "Estado postura",
+                    modifier = Modifier.size(110.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .background(Color.White, RoundedCornerShape(16.dp))
+                        .padding(horizontal = 18.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (postura == "BUENA") "Correcta" else "Incorrecta",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Tarjetas de tiempo
+            Column(
+                modifier = Modifier.weight(0.45f)
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    colors = CardDefaults.cardColors(Color(0xFFD9EEF5)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("Tiempo en postura correcta", fontSize = 12.sp)
+                        Text("3 h 45 m", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    colors = CardDefaults.cardColors(Color(0xFFD9EEF5)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text("Tiempo en incorrecta postura", fontSize = 12.sp)
+                        Text("1 h 30 m", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 3. Tarjeta "Sobre la Cuenta"
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column {
-                Text("Sobre la Cuenta", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(16.dp))
-                Divider()
-                AccountOption(label = "Información personal", onClick = { /* Navegar */ })
-                AccountOption(label = "Estadísticas Diarias", onClick = refreshData) // Ejemplo
-                AccountOption(label = "Consejos", onClick = { /* Mostrar Consejos */ })
-            }
-        }
+        // ------------------ SOBRE LA CUENTA ------------------
 
-        // 4. Tarjeta "Notificaciones"
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            border = BorderStroke(1.dp, Color.Black),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White) // ⭐ FONDO BLANCO
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Notificaciones", fontWeight = FontWeight.SemiBold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("30 min con buena postura", color = Color.Gray)
-            }
-        }
-    }
-}
+            Column(Modifier.padding(18.dp)) {
+                Text("Sobre la Cuenta", fontWeight = FontWeight.Bold, fontSize = 18.sp)
 
-// --- Componentes Auxiliares para el Diseño del Estado ---
+                Spacer(modifier = Modifier.height(12.dp))
 
-@Composable
-fun PostureStatusCard(
-    postureState: String,
-    timeCorrect: String,
-    timeIncorrect: String,
-    onRefreshClick: () -> Unit
-) {
-    val isCorrect = postureState == "Correcta"
-    val primaryColor = if (isCorrect) CorrectColor else IncorrectColor
-    val icon = if (isCorrect) Icons.Default.Check else Icons.Default.Close
 
-    // El padding total de la tarjeta
-    Column(modifier = Modifier.padding(16.dp)) {
-
-        // Fila que contiene el estado principal y los tiempos
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // 1. Bloque Principal de Estado (Izquierda)
-            Card(
-                modifier = Modifier.height(180.dp).weight(0.5f).padding(end = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = LightBlueBackground),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text("Estado actual de la Postura", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-
-                    // Icono Grande
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "Estado",
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(90.dp)
-                                .background(primaryColor, shape = CircleShape)
-                                .padding(12.dp)
-                        )
-                    }
-
-                    // Etiqueta de Estado/Botón de Refresco
-                    Button(
-                        onClick = onRefreshClick, // Usamos este botón para refrescar datos
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                    ) {
-                        Text(postureState, color = Color.Black, fontWeight = FontWeight.Bold)
-                    }
+                CuentaItem("Información personal") {
+                    navController.navigate("personal_info")
                 }
+
+                CuentaItem(
+                    texto = "Consejos",
+                    icono = { Icon(Icons.Default.Lightbulb, contentDescription = "Consejos") }
+                ) {
+                    navController.navigate("tips")
+                }
+
+
             }
 
-            // 2. Bloques de Tiempo (Derecha)
-            Column(modifier = Modifier.weight(0.5f).height(180.dp)) {
-
-                // Tiempo Correcto
-                TimeDisplayCard(
-                    title = "Tiempo en postura correcta",
-                    time = timeCorrect,
-                    modifier = Modifier.weight(1f).padding(bottom = 8.dp),
-                    timeColor = Color.Black, // Texto negro para el diseño
-                    bgColor = LightBlueBackground
-                )
-
-                // Tiempo Incorrecto
-                TimeDisplayCard(
-                    title = "Tiempo en mala postura",
-                    time = timeIncorrect,
-                    modifier = Modifier.weight(1f),
-                    timeColor = Color.Black, // Texto negro para el diseño
-                    bgColor = LightBlueBackground
-                )
-            }
         }
-    }
-}
 
-// Componente para mostrar los paneles de tiempo
-@Composable
-fun TimeDisplayCard(
-    title: String,
-    time: String,
-    modifier: Modifier = Modifier,
-    timeColor: Color,
-    bgColor: Color
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
-            verticalArrangement = Arrangement.Center
+        Spacer(modifier = Modifier.height(20.dp))
+
+// ------------------ NOTIFICACIONES ------------------
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            border = BorderStroke(1.dp, Color.Black),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White) // ⭐ FONDO BLANCO
         ) {
-            Text(title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(time,
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.headlineSmall,
-                color = timeColor
-            )
+            Column(Modifier.padding(18.dp)) {
+                Text("Notificaciones", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                NotiItem("30 min con buena postura")
+                NotiItem("Mantuviste una postura correcta durante 1 hora")
+                NotiItem("5 min en mala postura")
+                NotiItem("Postura incorrecta detectada")
+                NotiItem("Sensor y lámpara vinculados correctamente")
+                NotiItem("Sensor desconectado")
+                NotiItem("Tu postura fue correcta el 75% del día")
+                NotiItem("Nuevo récord: 2 horas seguidas con buena postura")
+                NotiItem("Recuerda mantener la espalda recta")
+                NotiItem("¿Necesitas una pausa? Llevas 45 min sentado")
+            }
         }
+
     }
 }
 
-// Componente para las opciones de cuenta (reutilizado de la sugerencia anterior)
 @Composable
-fun AccountOption(label: String, onClick: () -> Unit) {
+fun CuentaItem(
+    texto: String,
+    icono: @Composable (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp)
+            .clickable { onClick() },
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
-            Text(label)
+            if (icono != null) {
+                icono()
+                Spacer(modifier = Modifier.width(10.dp))
+            } else {
+                Icon(Icons.Default.Person, contentDescription = null)
+                Spacer(modifier = Modifier.width(10.dp))
+            }
+            Text(texto)
         }
-        Icon(Icons.Default.ArrowForwardIos, contentDescription = null, modifier = Modifier.size(16.dp))
+
+        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
+    }
+}
+
+
+@Composable
+fun NotiItem(texto: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(texto)
     }
 }
