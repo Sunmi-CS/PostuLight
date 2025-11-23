@@ -38,6 +38,7 @@ fun RegisterScreen(navController: NavController) {
     var showPass by remember { mutableStateOf(false) }
     var showConfirmPass by remember { mutableStateOf(false) }
 
+
     val blue = Color(0xFF4AA5C9)
 
     Column(
